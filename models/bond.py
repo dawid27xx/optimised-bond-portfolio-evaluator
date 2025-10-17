@@ -26,6 +26,8 @@ class Bond:
             paymentDates.append(nextDate)
             payments.append(couponAmount)
             currentDate = nextDate
+            
+        # to change to consider ACT/ACT or ACT/365
 
         daysFull = (currentDate + relativedelta(months=+monthsPerPeriod) - currentDate).days
         daysStub = (self.maturityDate - currentDate).days
@@ -66,10 +68,3 @@ class UKGiltBond(Bond):
         )
         self.currency = "GBP"
         self.issuer = "UK_GOVERNMENT"
-
-
-if __name__ == "__main__":
-    bond = UKGiltBond(1000, 0.05, date(2030, 10, 1), date(2020, 1, 1))
-    dates, payments = bond.generateCashflows()
-    for d, p in zip(dates, payments):
-        print(d, round(p, 2))
