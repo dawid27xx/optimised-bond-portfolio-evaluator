@@ -1,5 +1,8 @@
 from datetime import date
 import math
+from utils.plotCurve import plotYieldCurve
+import numpy as np
+
 
 class YieldCurve:
     def __init__(self, curveDate, tenors, spotRates, compounding, currency, dayCount):
@@ -17,10 +20,14 @@ class YieldCurve:
         if t >= self.tenors[-1]:
             return self.spotRates[-1]
         
+
         if t in self.tenors:
-            return self.spotRates[self.tenors.index(t)]
+            idx = np.where(self.tenors == t)[0][0]
+            return self.spotRates[idx]
+
 
         # interporlation
+        # to change as not fully accurate
         for i in range(len(self.tenors) - 1):
             t1, t2 = self.tenors[i], self.tenors[i + 1]
             if t1 <= t <= t2:
@@ -65,4 +72,5 @@ class YieldCurve:
         pass
 
     def plotCurve(self):
-        pass
+        plotYieldCurve(self, title="US Treasury Yield Curve")
+

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_yield_curve(yield_curve, title=None):
+def plotYieldCurve(yield_curve, title=None):
     tenors = np.array(yield_curve.tenors)
     spot_rates = np.array(yield_curve.spotRates)
 

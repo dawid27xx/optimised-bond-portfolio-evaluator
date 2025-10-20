@@ -1,40 +1,48 @@
 from datetime import date
 from models.yieldCurve import YieldCurve
 from models.bond import Bond
-from utils.plotCurve import plot_yield_curve
+from models.pricer import Pricer
+from utils.loadData import loadData
+from utils.generateBonds import loadBonds
+
 
 def main():
-    yc = YieldCurve(
-        curveDate=date(2025, 10, 17),
-        tenors=[0.5, 1, 2, 5, 10, 20, 30],
-        spotRates=[0.043, 0.044, 0.045, 0.047, 0.048, 0.049, 0.050],
-        compounding="semiannual",
-        currency="USD",
-        dayCount="ACT/ACT"
-    )
+    
+    UKGiltTenors, UKGiltSRs = loadData("data/boeYield.csv")
+    USTreasuryTenors, USTreasurySRs = loadData("data/treasuryYield.csv")
 
-    print("Interpolated Spot Rate at 7.5 years:")
-    print(round(yc.getSpotRate(7.5) * 100, 3), "%")
+    UKGiltYC = YieldCurve(date(2025, 10, 16), UKGiltTenors, UKGiltSRs, compounding="annual", currency="GBP", dayCount="ACT/365")
+    USTreasuryYC = YieldCurve(date(2025, 10, 16), USTreasuryTenors, USTreasurySRs, compounding="semiannual", currency="USD", dayCount="ACT/ACT")
 
-    print("\nDiscount Factor at 7.5 years:")
-    print(round(yc.getDiscountFactor(7.5), 6))
+    UKPricer = Pricer(UKGiltYC, date.today())
+    USPricer = Pricer(USTreasuryYC, date.today())
+    
+    bonds = loadBonds("data/bonds.csv")
 
-    bond = Bond(
-        face=1000,
-        couponRate=0.05,
-        maturityDate=date(2030, 10, 1),
-        issueDate=date(2020, 1, 1),
-        frequency=2,
-        dayCount="ACT/ACT"
-    )
+    print("\n📊 PORTFOLIO VALUATION RESULTS")
+    print("-" * 80)
 
-    paymentDates, payments = bond.generateCashflows()
-    print("\nSample bond cashflows:")
-    for d, p in zip(paymentDates[:5], payments[:5]):
-        print(d, p)
+    UK_total, US_total = 0, 0
 
-    print("\nPlotting yield curve...")
-    plot_yield_curve(yc, title="US Treasury Yield Curve")
+    for issuer, bond in bonds:
+        if issuer == "UK":
+            pv, received, total = UKPricer.priceBond(bond)
+            UK_total += pv
+            print(f"🇬🇧 UK | Maturity: {bond.maturityDate} | Face: £{bond.face:>7,.0f} | Coupon: {bond.couponRate*100:>4.2f}% | PV: £{pv:>8.2f} | Received: £{received:>8.2f}")
+        elif issuer == "US":
+            pv, received, total = USPricer.priceBond(bond)
+            US_total += pv
+            print(f"🇺🇸 US | Maturity: {bond.maturityDate} | Face: ${bond.face:>7,.0f} | Coupon: {bond.couponRate*100:>4.2f}% | PV: ${pv:>8.2f} | Received: ${received:>8.2f}")
+        else:
+            print(f"⚠️ Unknown issuer: {issuer}")
+
+    print("\n💼 PORTFOLIO SUMMARY")
+    print("-" * 80)
+    print(f"Total UK Gilts Value: £{UK_total:,.2f}")
+    print(f"Total US Treasuries Value: ${US_total:,.2f}")
+    print(f"Combined Portfolio Value: £{UK_total:,.2f} + ${US_total:,.2f}")
+
+    
 
 if __name__ == "__main__":
     main()
